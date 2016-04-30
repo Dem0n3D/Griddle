@@ -132,7 +132,9 @@ var Griddle = React.createClass({
             "previousIconComponent":"",
             "isMultipleSelection": false, //currently does not support subgrids
             "selectedRowIds": [],
-            "uniqueIdentifier": "id"
+            "uniqueIdentifier": "id",
+            "sortOrder": [],
+            "nestedSort": true
         };
     },
     propTypes: {
@@ -333,7 +335,7 @@ var Griddle = React.createClass({
       var currentPage = this.getCurrentPage();
         if (currentPage > 0) { this.setPage(currentPage - 1); }
     },
-    changeSort: function(sort){
+    changeSort: function(sort, shiftKey){
         if(this.props.enableSort === false){ return; }
         if(this.props.useExternal) {
             this.props.externalChangeSort(sort, this.props.externalSortColumn === sort ? !this.props.externalSortAscending : true);
@@ -343,13 +345,23 @@ var Griddle = React.createClass({
         var that = this,
             state = {
                 page:0,
-                sortColumn: sort,
-                sortAscending: true
+                sortOrder: this.state.sortOrder
             };
 
-        // If this is the same column, reverse the sort.
-        if(this.state.sortColumn == sort){
-            state.sortAscending = !this.state.sortAscending;
+        var orderRing = {'asc': 'desc', 'desc': 'none', 'none': 'asc'};
+        var order = 'none';
+
+        if(state.sortOrder.length > 0 && state.sortOrder[state.sortOrder.length - 1].column == sort){
+            order = state.sortOrder[state.sortOrder.length - 1].order;
+            state.sortOrder.pop();
+        }
+
+        if(!(this.props.nestedSort && shiftKey)) {
+            state.sortOrder = [];
+        }
+
+        if(orderRing[order] != 'none') {
+            state.sortOrder.push({column: sort, order: orderRing[order]});
         }
 
         this.setState(state);
@@ -407,7 +419,9 @@ var Griddle = React.createClass({
             sortAscending: this.props.initialSortAscending,
             showColumnChooser: false,
 			isSelectAllChecked: false,
-			selectedRowIds: this.props.selectedRowIds
+			selectedRowIds: this.props.selectedRowIds,
+            nestedSort: this.props.nestedSort,
+            sortOrder: this.props.sortOrder
         };
 
         return state;
@@ -499,49 +513,65 @@ var Griddle = React.createClass({
     },
     getDataForRender: function(data, cols, pageList){
         var that = this;
-            //get the correct page size
-            if(this.state.sortColumn !== "" || this.props.initialSort !== ""){
-                var sortColumn = _filter(this.props.columnMetadata, {columnName: this.state.sortColumn});
-                var sortProperty = sortColumn.length > 0 && sortColumn[0].hasOwnProperty("sortProperty") && sortColumn[0]["sortProperty"] || null;
-                // for underscore-style sortBy method (with 1 argument)
-                var compare = sortColumn.length > 0 && sortColumn[0].hasOwnProperty("compare") && sortColumn[0]["compare"] || null;
-                // for standard JS sort method (with 2 arguments)
-                var compare2 = sortColumn.length > 0 && sortColumn[0].hasOwnProperty("compare2") && sortColumn[0]["compare2"] || null;
-                var column = that.state.sortColumn || that.props.initialSort;
+        //get the correct page size
+        if(this.state.sortOrder.length > 0){
+            var simpleCompare = function(a, b) {
+                if(a < b) {
+                    return -1;
+                } else if(a > b) {
+                    return 1;
+                }
+                return 0;
+            };
 
-                if(compare2){
-                    data = data.sort(function (a, b) {
-                        return compare2(deep.getAt(a, column), deep.getAt(b, column));
-                    });
-                } else {
-                    data = sortBy(data, function (item) {
+            data = data.sort(function(a, b) {
+                var r = 0,
+                    i = 0;
+                // doing nested sort magic
+                while(r == 0 && i < that.state.sortOrder.length){
+                    var column = that.state.sortOrder[i].column;
+                    var sortColumn = _filter(that.props.columnMetadata, {columnName: column});
+                    var sortProperty = sortColumn.length > 0 && sortColumn[0].hasOwnProperty("sortProperty") && sortColumn[0]["sortProperty"] || null;
+                    // for underscore-style sortBy method (with 1 argument)
+                    var compare = sortColumn.length > 0 && sortColumn[0].hasOwnProperty("compare") && sortColumn[0]["compare"] || null;
+                    // for standard JS sort method (with 2 arguments)
+                    var compare2 = sortColumn.length > 0 && sortColumn[0].hasOwnProperty("compare2") && sortColumn[0]["compare2"] || null;
+
+                    if(compare2){
+                        r = compare2(deep.getAt(a, column), deep.getAt(b, column));
+                    } else {
                         if(sortProperty){
-                            return deep.getAt(item, column)[sortProperty];
+                            r = simpleCompare(deep.getAt(a, column)[sortProperty], deep.getAt(b, column)[sortProperty]);
                         } else if(compare){
-                            return compare(deep.getAt(item, column));
+                            r = simpleCompare(compare(deep.getAt(a, column)), compare(deep.getAt(b, column)));
                         } else {
-                            return deep.getAt(item, column);
+                            r = simpleCompare(deep.getAt(a, column), deep.getAt(b, column));
                         }
-                    });
+                    }
+
+                    if(that.state.sortOrder[i].order == "desc"){
+                        r *= -1;
+                    }
+
+                    i++;
                 }
 
-                if(this.state.sortAscending === false){
-                    data.reverse();
-                }
+                return r;
+            });
+        }
+
+        var currentPage = this.getCurrentPage();
+
+        if (!this.props.useExternal && pageList && (this.state.resultsPerPage * (currentPage+1) <= this.state.resultsPerPage * this.state.maxPage) && (currentPage >= 0)) {
+            if (this.isInfiniteScrollEnabled()) {
+              // If we're doing infinite scroll, grab all results up to the current page.
+              data = first(data, (currentPage + 1) * this.state.resultsPerPage);
+            } else {
+              //the 'rest' is grabbing the whole array from index on and the 'initial' is getting the first n results
+              var rest = drop(data, currentPage * this.state.resultsPerPage);
+              data = (dropRight || initial)(rest, rest.length-this.state.resultsPerPage);
             }
-
-            var currentPage = this.getCurrentPage();
-
-            if (!this.props.useExternal && pageList && (this.state.resultsPerPage * (currentPage+1) <= this.state.resultsPerPage * this.state.maxPage) && (currentPage >= 0)) {
-                if (this.isInfiniteScrollEnabled()) {
-                  // If we're doing infinite scroll, grab all results up to the current page.
-                  data = first(data, (currentPage + 1) * this.state.resultsPerPage);
-                } else {
-                  //the 'rest' is grabbing the whole array from index on and the 'initial' is getting the first n results
-                  var rest = drop(data, currentPage * this.state.resultsPerPage);
-                  data = (dropRight || initial)(rest, rest.length-this.state.resultsPerPage);
-                }
-            }
+        }
 
         var meta = this.columnSettings.getMetadataColumns;
 
@@ -582,6 +612,7 @@ var Griddle = React.createClass({
         return {
             enableSort: this.props.enableSort,
             changeSort: this.changeSort,
+            sortOrder: this.state.sortOrder, // TODO: externalSortOrder
             sortColumn: this.getCurrentSort(),
             sortAscending: this.getCurrentSortAscending(),
             sortAscendingClassName: this.props.sortAscendingClassName,

@@ -30,7 +30,7 @@ var GridTitle = React.createClass({
   sort: function(column) {
     var that = this;
     return function(event) {
-      that.props.sortSettings.changeSort(column);
+      that.props.sortSettings.changeSort(column, event.shiftKey);
     };
   },
   toggleSelectAll: function (event) {
@@ -54,17 +54,27 @@ var GridTitle = React.createClass({
     var that = this;
     var titleStyles = null;
 
+    var sortOrder = {};
+    for(var i=0; i < that.props.sortSettings.sortOrder.length; i++) {
+      sortOrder[that.props.sortSettings.sortOrder[i].column] = {
+        order: that.props.sortSettings.sortOrder[i].order,
+        index: i+1
+      };
+    }
+
     var nodes = this.props.columnSettings.getColumns().map(function(col, index){
         var columnSort = "";
         var columnIsSortable = that.props.columnSettings.getMetadataColumnProperty(col, "sortable", true);
         var sortComponent = columnIsSortable ? that.props.sortSettings.sortDefaultComponent : null;
 
-        if(that.props.sortSettings.sortColumn == col && that.props.sortSettings.sortAscending){
+        if(sortOrder[col]) {
+          if(sortOrder[col].order == "asc") {
             columnSort = that.props.sortSettings.sortAscendingClassName;
             sortComponent = that.props.useGriddleIcons && that.props.sortSettings.sortAscendingComponent;
-        }  else if (that.props.sortSettings.sortColumn == col && that.props.sortSettings.sortAscending === false){
+          } else {
             columnSort += that.props.sortSettings.sortDescendingClassName;
             sortComponent = that.props.useGriddleIcons && that.props.sortSettings.sortDescendingComponent;
+          }
         }
 
         var meta = that.props.columnSettings.getColumnMetadataByName(col);
