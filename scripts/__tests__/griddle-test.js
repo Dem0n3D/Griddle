@@ -273,18 +273,18 @@ describe('Griddle', function() {
   });
 
   it('sets sort filter correctly', function(){
-    expect(grid.state.sortColumn).toEqual("");
+    expect(grid.state.sortOrder).toEqual([]);
     grid.changeSort("address.state");
-    expect(grid.state.sortColumn).toEqual("address.state");
+    expect(grid.state.sortOrder[0].column).toEqual("address.state");
   });
 
   it('sets sort direction correctly', function(){
-    expect(grid.state.sortColumn).toEqual("");
+    expect(grid.state.sortOrder).toEqual([]);
     grid.changeSort("address.state");
-    expect(grid.state.sortColumn).toEqual("address.state");
-    expect(grid.state.sortAscending).toEqual(true);
+    expect(grid.state.sortOrder[0].column).toEqual("address.state");
+    expect(grid.state.sortOrder[0].order).toEqual("asc");
     grid.changeSort("address.state");
-    expect(grid.state.sortAscending).toEqual(false);
+    expect(grid.state.sortOrder[0].order).toEqual("desc");
   });
 
   it('uses results when external not set', function(){

@@ -17,9 +17,8 @@ describe('GridTitle', function() {
     sortObject =  {
         enableSort: true,
         changeSort: null,
-        sortColumn: "",
-        sortAscending: true,
-				sortDefaultComponent: null,
+        sortOrder: [],
+        sortDefaultComponent: null,
         sortAscendingClassName: "",
         sortDescendingClassName: "",
         sortAscendingComponent: null,
