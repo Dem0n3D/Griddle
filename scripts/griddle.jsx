@@ -631,11 +631,7 @@ var Griddle = React.createClass({
 
         var self = this;
 		forEach(visibleRows, function (row) {
-            self._updateSelectedRowIds(row[self.props.uniqueIdentifier], newSelectedRowIds, newIsSelectAllChecked);
-
-            if(self.props.onCheck) {
-                self.props.onCheck(row, newIsSelectAllChecked);
-            }
+            self._updateSelectedRowIds(row, newSelectedRowIds, newIsSelectAllChecked);
 		}, this);
 
 		this.setState({
@@ -647,18 +643,15 @@ var Griddle = React.createClass({
         var visibleRows = this.getDataForRender(this.getCurrentResults(), this.columnSettings.getColumns(), true),
             newSelectedRowIds = this.state.selectedRowIds;
 
-        this._updateSelectedRowIds(row[this.props.uniqueIdentifier], newSelectedRowIds, isChecked);
-
-        if(this.props.onCheck) {
-            this.props.onCheck(row, isChecked);
-        }
+        this._updateSelectedRowIds(row, newSelectedRowIds, isChecked);
 
 		this.setState({
             selectedRowIds: newSelectedRowIds
 		});
 	},
-    _updateSelectedRowIds: function (id, selectedRowIds, isChecked) {
+    _updateSelectedRowIds: function (row, selectedRowIds, isChecked) {
 
+	    var id = row[this.props.uniqueIdentifier];
         var isFound;
 
         if(isChecked) {
@@ -668,9 +661,17 @@ var Griddle = React.createClass({
 
             if(isFound === undefined) {
                 selectedRowIds.push(id);
+
+                if(this.props.onCheck) {
+                    this.props.onCheck(row, isChecked);
+                }
             }
         } else {
             selectedRowIds.splice(selectedRowIds.indexOf(id), 1);
+
+            if(this.props.onCheck) {
+                this.props.onCheck(row, isChecked);
+            }
         }
     },
 	_getIsSelectAllChecked: function () {
