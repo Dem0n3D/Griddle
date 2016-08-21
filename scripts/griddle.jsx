@@ -632,6 +632,10 @@ var Griddle = React.createClass({
         var self = this;
 		forEach(visibleRows, function (row) {
             self._updateSelectedRowIds(row[self.props.uniqueIdentifier], newSelectedRowIds, newIsSelectAllChecked);
+
+            if(self.props.onCheck) {
+                self.props.onCheck(row, newIsSelectAllChecked);
+            }
 		}, this);
 
 		this.setState({
@@ -644,6 +648,10 @@ var Griddle = React.createClass({
             newSelectedRowIds = this.state.selectedRowIds;
 
         this._updateSelectedRowIds(row[this.props.uniqueIdentifier], newSelectedRowIds, isChecked);
+
+        if(this.props.onCheck) {
+            this.props.onCheck(row, isChecked);
+        }
 
 		this.setState({
             selectedRowIds: newSelectedRowIds
