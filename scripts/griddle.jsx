@@ -34,6 +34,7 @@ var omit = require('lodash/omit');
 var map = require('lodash/map');
 var extend = require('lodash/assign');
 var _filter = require('lodash/filter');
+var difference = require('lodash/difference');
 
 var _orderBy = require('lodash/orderBy');
 var _property = require('lodash/property');
@@ -629,9 +630,9 @@ var Griddle = React.createClass({
         }
     },
 	_toggleSelectAll: function () {
-		var visibleRows = this.getDataForRender(this.getCurrentResults(), this.columnSettings.getColumns(), true),
+		var visibleRows = this.getCurrentResults(),
             newIsSelectAllChecked = !this.state.isSelectAllChecked,
-			newSelectedRowIds = JSON.parse(JSON.stringify(this.state.selectedRowIds));
+			newSelectedRowIds = this.state.selectedRowIds;
 
         var self = this;
 		forEach(visibleRows, function (row) {
@@ -646,7 +647,7 @@ var Griddle = React.createClass({
 	_toggleSelectRow: function (row, isChecked) {
 
         var visibleRows = this.getDataForRender(this.getCurrentResults(), this.columnSettings.getColumns(), true),
-            newSelectedRowIds = JSON.parse(JSON.stringify(this.state.selectedRowIds));
+            newSelectedRowIds = this.state.selectedRowIds;
 
         this._updateSelectedRowIds(row[this.props.uniqueIdentifier], newSelectedRowIds, isChecked);
 
@@ -672,28 +673,12 @@ var Griddle = React.createClass({
         }
     },
 	_getIsSelectAllChecked: function () {
-
-		return this.state.isSelectAllChecked;
+        var visibleRows = this.getCurrentResults();
+        var selectedRowIds = this.state.selectedRowIds;
+        return this._getAreAllRowsChecked(selectedRowIds, map(visibleRows, this.props.uniqueIdentifier));
 	},
     _getAreAllRowsChecked: function (selectedRowIds, visibleRowIds) {
-
-        var i, isFound;
-
-        if(selectedRowIds.length !== visibleRowIds.length) {
-            return false;
-        }
-
-        for(i = 0; i < selectedRowIds.length; i++) {
-            isFound = find(visibleRowIds, function (visibleRowId) {
-                return selectedRowIds[i] === visibleRowId;
-            });
-
-            if(isFound === undefined) {
-                return false;
-            }
-        }
-
-        return true;
+        return difference(visibleRowIds, selectedRowIds).length == 0;
     },
     _getIsRowChecked: function (row) {
 
@@ -705,10 +690,6 @@ var Griddle = React.createClass({
 	},
 	_resetSelectedRows: function () {
 
-		this.setState({
-			isSelectAllChecked: false,
-			selectedRowIds: []
-		})
 	},
 	//This takes the props relating to multiple selection and puts them in one object
 	getMultipleSelectionObject: function(){
