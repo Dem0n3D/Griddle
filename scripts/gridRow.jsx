@@ -126,7 +126,8 @@ var GridRow = React.createClass({
                     type="checkbox"
                     checked={this.props.multipleSelectionSettings.getIsRowChecked(dataView)}
                     onChange={this.handleSelectionChange}
-                    ref="selected" />
+                    ref="selected"
+                    width="10px" />
               </td>
             );
 		}
