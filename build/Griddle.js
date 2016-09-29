@@ -757,7 +757,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            toggleSelectRow: this._toggleSelectRow,
 	            getSelectedRowIds: this.getSelectedRowIds,
-	            getIsRowChecked: this._getIsRowChecked
+	            getIsRowChecked: this._getIsRowChecked,
+
+	            handleRowClick: false
 	        };
 	    },
 	    isInfiniteScrollEnabled: function isInfiniteScrollEnabled() {
@@ -7166,7 +7168,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (this.props.multipleSelectionSettings.isMultipleSelection) {
 	            if (e.target.type === "checkbox") {
 	                this.props.multipleSelectionSettings.toggleSelectRow(this.props.data, this.refs.selected.checked);
-	            } else {
+	            } else if (this.props.multipleSelectionSettings.handleRowClick) {
 	                this.props.multipleSelectionSettings.toggleSelectRow(this.props.data, !this.refs.selected.checked);
 	            }
 	        }

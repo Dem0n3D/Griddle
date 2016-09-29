@@ -707,7 +707,9 @@ var Griddle = React.createClass({
 
 			toggleSelectRow: this._toggleSelectRow,
 			getSelectedRowIds: this.getSelectedRowIds,
-            getIsRowChecked: this._getIsRowChecked
+			getIsRowChecked: this._getIsRowChecked,
+
+			handleRowClick: false
 		}
 	},
     isInfiniteScrollEnabled: function(){
